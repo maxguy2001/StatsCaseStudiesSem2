@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
 
 
 def tidyData(df):
@@ -17,15 +18,28 @@ def evaulateModel():
 
 
 def logScore(real_values, predictions):
-    pass
+
+    log_score = 0
+    for i in range(len(real_values)):
+        log_score += np.log(predictions[i, real_values[i]])
+
+    return log_score
 
 
 def brierScore(real_values, predictions):
-    pass
+    predict_one = predictions[:, 1]
+    squared_diffs = 0
+    for i in range(len(real_values)):
+        squared_diffs += (real_values[i] - squared_diffs[i])**2
+
+    brier_score = squared_diffs/len(real_values)
+    return brier_score
 
 
-def fitLogisticRegression(df):
-    # TODO: data encoding
+def fitLogisticRegression(df, scoringFunction):
+    # encode categorical data as binary dummy variables
+    df = pd.get_dummies(df)
+
     # Separating features and target
     y = df["SalePrice"]
     X = df.drop(["SalePrice"], axis=1, inplace=True)
@@ -41,6 +55,10 @@ def fitLogisticRegression(df):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
+        # scale data
+        X_train = StandardScaler().fit_transofrm(X_train)
+        X_test = StandardScaler().fit_transofrm(X_test)
+
         # fit model
         clf = LogisticRegression(random_state=3).fit(X_train, y_train)
 
@@ -48,7 +66,7 @@ def fitLogisticRegression(df):
         y_pred = clf.predict_proba(X_test)
 
         # score predition
-        score = evaulateModel(y_test, y_pred)
+        score = scoringFunction(y_test, y_pred)
 
         # add score to list
         scores.append(score)
