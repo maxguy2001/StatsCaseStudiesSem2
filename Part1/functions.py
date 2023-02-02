@@ -6,7 +6,7 @@ from sklearn.model_selection import KFold
 
 
 def tidyData(df):
-    df = df.dropna(inplace=True)
+    df.dropna(inplace=True)
     mean_house_price = df["SalePrice"].mean()
     df["SalePrice"] = np.where(df["SalePrice"] < mean_house_price, 0, 1)
     return df
@@ -16,7 +16,16 @@ def evaulateModel():
     pass
 
 
+def logScore(real_values, predictions):
+    pass
+
+
+def brierScore(real_values, predictions):
+    pass
+
+
 def fitLogisticRegression(df):
+    # TODO: data encoding
     # Separating features and target
     y = df["SalePrice"]
     X = df.drop(["SalePrice"], axis=1, inplace=True)
@@ -32,16 +41,16 @@ def fitLogisticRegression(df):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-        #fit model
+        # fit model
         clf = LogisticRegression(random_state=3).fit(X_train, y_train)
 
-        #make prediction
+        # make prediction
         y_pred = clf.predict_proba(X_test)
 
-        #score predition
+        # score predition
         score = evaulateModel(y_test, y_pred)
 
-        #add score to list
+        # add score to list
         scores.append(score)
 
     return scores
