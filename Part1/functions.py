@@ -4,8 +4,14 @@ import pandas as pd
 
 
 def tidyData(df):
-    # TODO tidy the data
+    df = df.dropna(inplace=True)
+    mean_house_price = df["SalePrice"].mean()
+    df["SalePrice"] = np.where(df["SalePrice"] < mean_house_price, 0, 1)
     return df
+
+
+def evaulateModel():
+    pass
 
 
 def fitLogisticRegression(df):
