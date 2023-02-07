@@ -4,6 +4,8 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import train_test_split
+from sklearn import metrics
 
 
 def tidyData(df):
@@ -48,7 +50,7 @@ def fitLogisticRegression(df, scoringFunction):
     y = df["SalePrice"]
     X = df.copy(deep=True)
     X.drop(["SalePrice"], axis=1, inplace=True)
-    
+
     # Make cross validation generator
     cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
 
@@ -98,29 +100,30 @@ nb_df['BldgType']= label_encoder.fit_transform(nb_df["BldgType"])
 
 """
 
+
 def fitNaiveBayes(df):
 
     # Split dataset into training set and test set, 70% training and 30% test
-    X_train, X_test, y_train, y_test = train_test_split(df.iloc[:, 0:4], df.iloc[:, -1], test_size=0.3,random_state=109) 
+    X_train, X_test, y_train, y_test = train_test_split(
+        df.iloc[:, 0:4], df.iloc[:, -1], test_size=0.3, random_state=109)
 
-    #Import Gaussian Naive Bayes model
+    # Import Gaussian Naive Bayes model
     from sklearn.naive_bayes import GaussianNB
 
-    #Create a Gaussian Classifier
+    # Create a Gaussian Classifier
     gnb = GaussianNB()
 
-    #Train the model using the training sets
+    # Train the model using the training sets
     gnb.fit(X_train, y_train)
 
-    #Predict the response for test dataset
+    # Predict the response for test dataset
     y_pred = gnb.predict(X_test)
 
     # Assess the model
 
     # Cross-validation, 10 fold
 
-    return("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+    return("Accuracy:", metrics.accuracy_score(y_test, y_pred))
 
 
-print(fitNaiveBayes(nb_df))
-
+# print(fitNaiveBayes(nb_df))
