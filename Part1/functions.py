@@ -1,9 +1,10 @@
 import numpy as np
-# from sklearn.x import y
 import pandas as pd
+
 from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
 def tidyData(df):
@@ -11,10 +12,6 @@ def tidyData(df):
     mean_house_price = df["SalePrice"].mean()
     df["SalePrice"] = np.where(df["SalePrice"] < mean_house_price, 0, 1)
     return df
-
-
-def evaulateModel():
-    pass
 
 
 def logScore(real_values, predictions):
@@ -87,5 +84,49 @@ def fitLogisticRegression(df, scoringFunction):
     return scores
 
 
-def fitNaiveBayes(df):
-    pass
+def fitNaiveBayes(df, scoringFunction):
+
+    # filtering df for used columns
+    all_cols = ["LotArea", "Neighborhood",
+                "BldgType", "OverallCond", "BedroomAbvGr"]
+    
+    #to avoid changing objects improperly
+    X = df.copy(deep=True)
+    X = X[all_cols]
+
+    # labelling categorical data
+    label_encoder = LabelEncoder()
+    X['Neighborhood'] = label_encoder.fit_transform(X["Neighborhood"])
+    X['BldgType'] = label_encoder.fit_transform(X["BldgType"])
+
+    # getting labels
+    y = df["SalePrice"]
+
+    # Make cross validation generator
+    cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
+
+    # Create a Gaussian Classifier object
+    gnb = GaussianNB()
+
+    scores = []
+
+    # do cross validation
+    for train_index, test_index in cv_generator.split(X):
+
+        # get testing and training data in fold
+        X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        # Train the model using the training sets
+        gnb.fit(X_train, y_train)
+
+        # Predict the response for test dataset
+        y_pred = gnb.predict_proba(X_test)
+
+        # score fit
+        score = scoringFunction(y_test.to_numpy(), y_pred)
+
+        # add score to list
+        scores.append(score)
+
+    return scores
