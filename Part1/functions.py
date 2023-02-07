@@ -48,7 +48,7 @@ def fitLogisticRegression(df, scoringFunction):
     y = df["SalePrice"]
     X = df.copy(deep=True)
     X.drop(["SalePrice"], axis=1, inplace=True)
-
+    
     # Make cross validation generator
     cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
 
@@ -87,5 +87,40 @@ def fitLogisticRegression(df, scoringFunction):
     return scores
 
 
+"""
+nb_df = houseprices[["LotArea", "Neighborhood", "BldgType", "OverallCond", "BedroomAbvGr", "SalePrice"]]
+#label_encoder object knows how to understand word labels. 
+label_encoder = preprocessing.LabelEncoder()
+    
+# Encode labels in column 'Country'. 
+nb_df['Neighborhood']= label_encoder.fit_transform(nb_df["Neighborhood"]) 
+nb_df['BldgType']= label_encoder.fit_transform(nb_df["BldgType"]) 
+
+"""
+
 def fitNaiveBayes(df):
-    pass
+
+    # Split dataset into training set and test set, 70% training and 30% test
+    X_train, X_test, y_train, y_test = train_test_split(df.iloc[:, 0:4], df.iloc[:, -1], test_size=0.3,random_state=109) 
+
+    #Import Gaussian Naive Bayes model
+    from sklearn.naive_bayes import GaussianNB
+
+    #Create a Gaussian Classifier
+    gnb = GaussianNB()
+
+    #Train the model using the training sets
+    gnb.fit(X_train, y_train)
+
+    #Predict the response for test dataset
+    y_pred = gnb.predict(X_test)
+
+    # Assess the model
+
+    # Cross-validation, 10 fold
+
+    return("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+
+print(fitNaiveBayes(nb_df))
+
