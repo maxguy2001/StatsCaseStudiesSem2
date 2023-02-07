@@ -1,11 +1,10 @@
 import numpy as np
-# from sklearn.x import y
 import pandas as pd
+
 from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import train_test_split
-from sklearn import metrics
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
 def tidyData(df):
@@ -13,10 +12,6 @@ def tidyData(df):
     mean_house_price = df["SalePrice"].mean()
     df["SalePrice"] = np.where(df["SalePrice"] < mean_house_price, 0, 1)
     return df
-
-
-def evaulateModel():
-    pass
 
 
 def logScore(real_values, predictions):
@@ -89,41 +84,49 @@ def fitLogisticRegression(df, scoringFunction):
     return scores
 
 
-"""
-nb_df = houseprices[["LotArea", "Neighborhood", "BldgType", "OverallCond", "BedroomAbvGr", "SalePrice"]]
-#label_encoder object knows how to understand word labels. 
-label_encoder = preprocessing.LabelEncoder()
+def fitNaiveBayes(df, scoringFunction):
+
+    # filtering df for used columns
+    all_cols = ["LotArea", "Neighborhood",
+                "BldgType", "OverallCond", "BedroomAbvGr"]
     
-# Encode labels in column 'Country'. 
-nb_df['Neighborhood']= label_encoder.fit_transform(nb_df["Neighborhood"]) 
-nb_df['BldgType']= label_encoder.fit_transform(nb_df["BldgType"]) 
+    #to avoid changing objects improperly
+    X = df.copy(deep=True)
+    X = X[all_cols]
 
-"""
+    # labelling categorical data
+    label_encoder = LabelEncoder()
+    X['Neighborhood'] = label_encoder.fit_transform(X["Neighborhood"])
+    X['BldgType'] = label_encoder.fit_transform(X["BldgType"])
 
+    # getting labels
+    y = df["SalePrice"]
 
-def fitNaiveBayes(df):
+    # Make cross validation generator
+    cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
 
-    # Split dataset into training set and test set, 70% training and 30% test
-    X_train, X_test, y_train, y_test = train_test_split(
-        df.iloc[:, 0:4], df.iloc[:, -1], test_size=0.3, random_state=109)
-
-    # Import Gaussian Naive Bayes model
-    from sklearn.naive_bayes import GaussianNB
-
-    # Create a Gaussian Classifier
+    # Create a Gaussian Classifier object
     gnb = GaussianNB()
 
-    # Train the model using the training sets
-    gnb.fit(X_train, y_train)
+    scores = []
 
-    # Predict the response for test dataset
-    y_pred = gnb.predict(X_test)
+    # do cross validation
+    for train_index, test_index in cv_generator.split(X):
 
-    # Assess the model
+        # get testing and training data in fold
+        X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-    # Cross-validation, 10 fold
+        # Train the model using the training sets
+        gnb.fit(X_train, y_train)
 
-    return("Accuracy:", metrics.accuracy_score(y_test, y_pred))
+        # Predict the response for test dataset
+        y_pred = gnb.predict_proba(X_test)
 
+        # score fit
+        score = scoringFunction(y_test.to_numpy(), y_pred)
 
-# print(fitNaiveBayes(nb_df))
+        # add score to list
+        scores.append(score)
+
+    return scores
