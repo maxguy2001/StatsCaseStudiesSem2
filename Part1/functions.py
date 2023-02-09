@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
@@ -73,7 +73,7 @@ def fitLogisticRegression(df, scoringFunction):
         clf.fit(X_train, y_train)
 
         # make prediction
-        y_pred = clf.predict_proba(X_test)
+        y_pred = clf.predict(X_test)
 
         # score prediction
         score = scoringFunction(y_test.to_numpy(), y_pred)
@@ -94,10 +94,8 @@ def fitNaiveBayes(df, scoringFunction):
     X = df.copy(deep=True)
     X = X[all_cols]
 
-    # labelling categorical data
-    label_encoder = LabelEncoder()
-    X['Neighborhood'] = label_encoder.fit_transform(X["Neighborhood"])
-    X['BldgType'] = label_encoder.fit_transform(X["BldgType"])
+    # changing to dummy variables 
+    X = pd.get_dummies(X)
 
     # getting labels
     y = df["SalePrice"]
@@ -106,7 +104,7 @@ def fitNaiveBayes(df, scoringFunction):
     cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
 
     # Create a Gaussian Classifier object
-    gnb = GaussianNB()
+    bnb = BernoulliNB()
 
     scores = []
 
@@ -118,10 +116,10 @@ def fitNaiveBayes(df, scoringFunction):
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
         # Train the model using the training sets
-        gnb.fit(X_train, y_train)
+        bnb.fit(X_train, y_train)
 
         # Predict the response for test dataset
-        y_pred = gnb.predict_proba(X_test)
+        y_pred = bnb.predict_proba(X_test)
 
         # score fit
         score = scoringFunction(y_test.to_numpy(), y_pred)
