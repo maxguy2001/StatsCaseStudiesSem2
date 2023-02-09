@@ -97,8 +97,6 @@ def fitNaiveBayes(df, scoringFunction):
     # changing to dummy variables 
     X = pd.get_dummies(X, columns = all_cols)
 
-    print(X.head())
-
     # getting labels
     y = df["SalePrice"]
 
