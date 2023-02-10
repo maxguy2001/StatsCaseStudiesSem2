@@ -36,6 +36,14 @@ def brierScore(real_values, predictions):
     brier_score = squared_diffs/len(real_values)
     return brier_score
 
+def accuracyScore(real_values, predictions):
+    
+    num_correct = 0
+    for i in range(len(real_values)):
+      if predictions[i, real_values[i]] > 0.5:
+        num_correct += 1
+
+    return num_correct/len(real_values)
 
 def fitLogisticRegression(df, scoringFunction):
     # encode categorical data as binary dummy variables
