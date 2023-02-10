@@ -36,6 +36,14 @@ def brierScore(real_values, predictions):
     brier_score = squared_diffs/len(real_values)
     return brier_score
 
+def accuracyScore(real_values, predictions):
+    
+    num_correct = 0
+    for i in range(len(real_values)):
+      if predictions[i, real_values[i]] > 0.5:
+        num_correct += 1
+
+    return num_correct/len(real_values)
 
 def fitLogisticRegression(df, scoringFunction):
     # encode categorical data as binary dummy variables
@@ -73,7 +81,7 @@ def fitLogisticRegression(df, scoringFunction):
         clf.fit(X_train, y_train)
 
         # make prediction
-        y_pred = clf.predict(X_test)
+        y_pred = clf.predict_proba(X_test)
 
         # score prediction
         score = scoringFunction(y_test.to_numpy(), y_pred)
@@ -89,13 +97,13 @@ def fitNaiveBayes(df, scoringFunction):
     # filtering df for used columns
     all_cols = ["LotArea", "Neighborhood",
                 "BldgType", "OverallCond", "BedroomAbvGr"]
-    
-    #to avoid changing objects improperly
+
+    # to avoid changing objects improperly
     X = df.copy(deep=True)
     X = X[all_cols]
 
-    # changing to dummy variables 
-    X = pd.get_dummies(X, columns = all_cols)
+    # changing to dummy variables
+    X = pd.get_dummies(X, columns=all_cols)
 
     # getting labels
     y = df["SalePrice"]
