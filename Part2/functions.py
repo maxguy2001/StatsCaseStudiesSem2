@@ -32,7 +32,7 @@ def trainLinearRegression(X, y):
         #add absolute difference to list
         abs_errors.append(abs(y_test.to_numpy() - y_pred)[0])
 
-    return np.mean(abs_errors)/len(abs_errors)
+    return np.sum(abs_errors)/len(abs_errors)
 
 
     
