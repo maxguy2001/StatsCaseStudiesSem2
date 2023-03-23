@@ -37,7 +37,7 @@ def trainLinearRegression(X, y):
 
 
 
-def quickScoreLinearRegression(queue, X, Y):
+def quickScoreLinearRegression(colnames):
     """
     arguments_list contains a list of function arguments with the following:
     - queue: multiprocessing queue
@@ -47,8 +47,25 @@ def quickScoreLinearRegression(queue, X, Y):
 
     This funciton is built in this way to optimize for parallel processing of results.
     """
-  
+    #read and preprocess data
+    df = pd.read_csv("houseprices.csv") 
+    garage_types = df["GarageType"].tolist()
+    fixed_garage_types = []
 
+    for i in garage_types:
+        if type(i) != str:
+            fixed_garage_types.append("NoGarage")
+        else:
+            fixed_garage_types.append(i)
+
+    df["GarageType"] = fixed_garage_types
+
+    df.dropna(inplace=True)
+    df = pd.get_dummies(df)
+
+    y = df["SalePrice"]
+    X = df[colnames]
+  
     abs_errors = []
 
     loo_generator = LeaveOneOut()
@@ -56,7 +73,11 @@ def quickScoreLinearRegression(queue, X, Y):
 
     for train_index, test_index in loo_generator.split(X):
         #subset dataframe
-        X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+        if len(colnames) == 1:
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        else:
+            X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+            
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
         #fit model
@@ -69,8 +90,7 @@ def quickScoreLinearRegression(queue, X, Y):
         abs_errors.append(abs(y_test.to_numpy() - y_pred)[0])
 
     mae = np.sum(abs_errors)/len(abs_errors)
-    queue.put(mae)
-    
+    return mae
 #print(f"Column {X.columns} had score, {mae}.")
     
     
