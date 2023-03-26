@@ -1,13 +1,20 @@
 # file for adding functions we wish to call in main report
+from warnings import simplefilter
+from sklearn.exceptions import ConvergenceWarning
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.model_selection import LeaveOneOut
 from sklearn.ensemble import RandomForestRegressor
+simplefilter("ignore", category=ConvergenceWarning)
 
 
 def getUseableHPData():
+    """
+    Read and modify first houseprice dataframe
+    to allow model fitting
+    """
     # read data
     df = pd.read_csv("houseprices.csv")
 
@@ -29,20 +36,37 @@ def getUseableHPData():
 
 
 def getUseableHP2Data():
+    """
+    Read and modify second houseprices dataframe to allow for model fitting.
+    This includes handling Na values and converting the dataframe to categorical.
+    """
     # read data
     df = pd.read_csv("houseprices2.csv")
 
-    # preproccessing
-    garage_types = df["GarageType"].tolist()
-    fixed_garage_types = []
+    # get all column data types, create dict from colname to dtype
+    datatypes = [x for x in df.dtypes]
+    colnames = df.dtypes.index
+    dict_colname_to_dtype = dict(zip(colnames, datatypes))
 
-    for i in garage_types:
-        if type(i) != str:
-            fixed_garage_types.append("NoGarage")
-        else:
-            fixed_garage_types.append(i)
+    # get cunts of na values per column
+    na_counts = [x for x in df.isna().sum()]
 
-    df["GarageType"] = fixed_garage_types
+    # handle na vals
+    for i in range(len(colnames)):
+        column_name = colnames[i]
+        column_type = dict_colname_to_dtype.get(column_name)
+        column_num_na = na_counts[i]
+
+    # for categorical columns, create na category
+        if column_num_na > 10 and column_type == "object":
+            categotical_column = df[column_name]
+            fixed_column = np.where(
+                categotical_column.isna(), "NotApplicable", categotical_column)
+            df[column_name] = fixed_column
+
+    # drop any non categorical where more than 10% of data missing
+        if column_num_na > 150 and column_type != "object":
+            df.drop(column_name, axis=1, inplace=True)
 
     df.dropna(inplace=True)
     df = pd.get_dummies(df)
@@ -63,6 +87,37 @@ def trainLinearRegression(X, y):
     reg = LinearRegression()
 
     for train_index, test_index in loo_generator.split(X):
+        # subset dataframe
+        X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        # fit model
+        reg.fit(X_train, y_train)
+
+        # predict missing datapoint
+        y_pred = reg.predict(X_test)
+
+        # add absolute difference to list
+        abs_errors.append(abs(y_test.to_numpy() - y_pred)[0])
+
+    return np.sum(abs_errors)/len(abs_errors)
+
+
+def trainLassoLinearRegression(X, y):
+    """
+    X should be pandas dataframe of predictors (with to.dummies applied)
+    y should be the saleprice column vector
+
+    return is the mean absolute error of this model with leave one out
+    cross validation applied to it.
+    """
+
+    abs_errors = []
+
+    cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
+    reg = Lasso(alpha=0.2, max_iter=25000)
+
+    for train_index, test_index in cv_generator.split(X):
         # subset dataframe
         X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -125,7 +180,7 @@ def quickScoreLinearRegression(colnames, use_hp_2=False):
     return mae
 
 
-def quickScoreRandomForest():
+def trainRandomForest(X, y):
     """
     arguments_list contains a list of function arguments with the following:
     - queue: multiprocessing queue
@@ -135,21 +190,13 @@ def quickScoreRandomForest():
 
     This funciton is built in this way to optimize for parallel processing of results.
     """
-    # read and preprocess data
-    # TODO: convert back to useable hp 2!
-    df = getUseableHPData()
-
-    y = df["SalePrice"]
-    X = df.copy(deep=True)
-    X.drop(["SalePrice"], axis=1, inplace=True)
 
     abs_errors = []
 
-    # TODO:change to 10-fold cv
-    loo_generator = LeaveOneOut()
-    rf = RandomForestRegressor()
+    cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
+    rf = RandomForestRegressor(n_estimators=20)
 
-    for train_index, test_index in loo_generator.split(X):
+    for train_index, test_index in cv_generator.split(X):
         # subset dataframe
         X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
 
