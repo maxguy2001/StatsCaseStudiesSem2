@@ -114,10 +114,10 @@ def trainLassoLinearRegression(X, y):
 
     abs_errors = []
 
-    cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
+    loo_generator = LeaveOneOut()
     reg = Lasso(alpha=0.2, max_iter=25000)
 
-    for train_index, test_index in cv_generator.split(X):
+    for train_index, test_index in loo_generator.split(X):
         # subset dataframe
         X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -194,7 +194,7 @@ def trainRandomForest(X, y):
     abs_errors = []
 
     cv_generator = KFold(n_splits=10, shuffle=True, random_state=3)
-    rf = RandomForestRegressor(n_estimators=20)
+    rf = RandomForestRegressor(n_estimators=20, random_state=3)
 
     for train_index, test_index in cv_generator.split(X):
         # subset dataframe
